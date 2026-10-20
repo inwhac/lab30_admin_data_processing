@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LABS 3.0 Admin · 데이터 처리 프로토타입</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+  :root{
+    color-scheme: light;
+    --bg:#F7F8FA; --surface:#FFFFFF; --surface-2:#FBFCFD;
+    --ink:#1A2430; --muted:#6B7785; --faint:#9AA4B0;
+    --line:#E3E7ED; --line-strong:#D3D9E1;
+    --primary:#0E9488; --primary-ink:#0B7A70; --primary-wash:#E6F4F2;
+    --danger:#D64545; --danger-wash:#FBECEC;
+    --success:#1E9E6A; --success-wash:#E7F5EE;
+    --warn:#B07A12; --warn-wash:#FBF2DD;
+    --shadow:0 10px 30px rgba(26,36,48,.14);
+    --radius:8px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:"Pretendard",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
+    font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,p{margin:0}
+  button{font-family:inherit; cursor:pointer}
+  a{color:var(--primary-ink)}
+
+  /* App bar */
+  .appbar{
+    display:flex; align-items:center; gap:16px;
+    height:56px; padding:0 20px;
+    background:var(--surface); border-bottom:1px solid var(--line);
+    position:sticky; top:0; z-index:20;
+  }
+  .brand{display:flex; align-items:center; gap:9px; font-weight:700; letter-spacing:-.01em}
+  .brand .dot{width:18px;height:18px;border-radius:5px;background:var(--primary);display:inline-block}
+  .brand small{color:var(--muted);font-weight:500;font-size:12px}
+  .crumb{color:var(--muted); font-size:13px}
+  .crumb b{color:var(--ink); font-weight:600}
+  .appbar .spacer{flex:1}
+  .demo{display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted)}
+  .demo select{
+    font-family:inherit; font-size:12px; color:var(--ink);
+    border:1px solid var(--line-strong); border-radius:6px; padding:5px 8px; background:var(--surface);
+  }
+  .demo .tag{background:var(--warn-wash); color:var(--warn); border-radius:5px; padding:2px 7px; font-weight:600}
+
+  .wrap{max-width:1180px; margin:0 auto; padding:20px}
+
+  /* Tabs */
+  .tabs{display:inline-flex; background:#EEF1F5; border-radius:9px; padding:4px; margin-bottom:18px}
+  .tabs button{
+    border:0; background:transparent; color:var(--muted);
+    font-size:14px; font-weight:600; padding:8px 18px; border-radius:7px;
+  }
+  .tabs button.on{background:var(--surface); color:var(--ink); box-shadow:0 1px 2px rgba(26,36,48,.08)}
+
+  /* Panels */
+  .panel{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); margin-bottom:16px}
+  .panel-hd{display:flex; align-items:center; gap:10px; padding:13px 16px; border-bottom:1px solid var(--line)}
+  .panel-hd h2{font-size:14px; font-weight:600}
+  .panel-hd .count{color:var(--muted); font-size:13px; font-weight:500}
+  .pagesize{display:flex; align-items:center; gap:7px; font-size:12px; color:var(--muted)}
+  .pagesize select{height:32px; border:1px solid var(--line-strong); border-radius:6px; padding:0 8px; font-family:inherit; font-size:12px; background:var(--surface); color:var(--ink)}
+
+  /* Search */
+  .search{display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; padding:16px}
+  .field{display:flex; flex-direction:column; gap:5px}
+  .field label{font-size:12px; color:var(--muted); font-weight:500}
+  .control, .search input, .search select{
+    height:36px; border:1px solid var(--line-strong); border-radius:6px;
+    padding:0 10px; font-family:inherit; font-size:13px; color:var(--ink); background:var(--surface);
+  }
+  .search input[type=text]{min-width:220px}
+  .search .grow{flex:1}
+  .search .btns{display:flex; gap:8px; margin-left:auto}
+  .btn{
+    height:36px; padding:0 16px; border-radius:6px; border:1px solid var(--line-strong);
+    background:var(--surface); color:var(--ink); font-size:13px; font-weight:600;
+  }
+  .btn:hover{background:var(--surface-2)}
+  .btn.primary{background:var(--primary); border-color:var(--primary); color:#fff}
+  .btn.primary:hover{background:var(--primary-ink)}
+  .btn.ghost{border-color:transparent; background:transparent; color:var(--muted)}
+  .btn:disabled{opacity:.45; cursor:not-allowed}
+  .btn.sm{height:30px; padding:0 14px; font-size:12px}
+
+  /* Table */
+  .table-scroll{overflow-x:auto}
+  table{border-collapse:collapse; width:100%; min-width:900px}
+  th,td{text-align:left; padding:11px 14px; border-bottom:1px solid var(--line); white-space:nowrap}
+  thead th{
+    position:sticky; top:0; background:var(--surface-2); z-index:1;
+    font-size:12px; font-weight:600; color:var(--muted); border-bottom:1px solid var(--line-strong);
+  }
+  tbody tr:hover{background:#FAFBFC}
+  td.name{white-space:normal; min-width:170px}
+  td.empty{text-align:center; color:var(--muted); padding:48px 0; white-space:normal}
+
+  /* Pagination */
+  .pager{display:flex; align-items:center; justify-content:flex-start; gap:16px; padding:14px 16px; border-top:1px solid var(--line); flex-wrap:wrap}
+  .pages{display:flex; gap:4px}
+  .pages button{min-width:32px;height:32px;border:1px solid var(--line-strong);background:var(--surface);border-radius:6px;color:var(--muted);font-size:13px}
+  .pages button.on{background:var(--primary-wash);border-color:var(--primary);color:var(--primary-ink);font-weight:700}
+  .pages button:disabled{opacity:.4;cursor:not-allowed}
+
+  /* Modal */
+  .overlay{position:fixed; inset:0; background:rgba(20,28,38,.46); display:none; align-items:center; justify-content:center; padding:20px; z-index:50}
+  .overlay.open{display:flex}
+  .modal{background:var(--surface); border-radius:12px; box-shadow:var(--shadow); width:100%; max-width:640px; max-height:90vh; display:flex; flex-direction:column; overflow:hidden}
+  .modal.wide{max-width:720px}
+  .modal-hd{display:flex; align-items:flex-start; gap:12px; padding:18px 20px; border-bottom:1px solid var(--line)}
+  .modal-hd .ttl{font-size:16px; font-weight:700}
+  .modal-hd .sub{font-size:12px; color:var(--muted); margin-top:3px}
+  .modal-hd .x{margin-left:auto; border:0; background:transparent; font-size:20px; color:var(--faint); line-height:1; padding:2px 6px}
+  .modal-bd{padding:20px; overflow:auto}
+  .modal-ft{display:flex; gap:8px; justify-content:flex-end; padding:14px 20px; border-top:1px solid var(--line); background:var(--surface-2)}
+  .modal-ft .left{margin-right:auto}
+
+  /* Stepper */
+  .steps{display:flex; align-items:center; gap:0; margin-bottom:20px}
+  .steps .st{display:flex; align-items:center; gap:8px; flex:1}
+  .steps .st:last-child{flex:0}
+  .steps .st .n{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;background:#EEF1F5;color:var(--faint);border:1px solid var(--line-strong);flex:none}
+  .steps .st .lb{font-size:12px;color:var(--faint);font-weight:600;white-space:nowrap}
+  .steps .st .bar{flex:1;height:2px;background:var(--line-strong);margin:0 10px;min-width:16px}
+  .steps .st.active .n{background:var(--primary);color:#fff;border-color:var(--primary)}
+  .steps .st.active .lb{color:var(--ink)}
+  .steps .st.done .n{background:var(--primary-wash);color:var(--primary-ink);border-color:var(--primary)}
+  .steps .st.done .lb{color:var(--muted)}
+
+  .stepbox{min-height:188px}
+  .stepbox p.lead{font-size:13px; color:var(--ink); margin-bottom:14px}
+  .stepbox .muted{color:var(--muted); font-size:12px}
+
+  /* Upload dropzone */
+  .drop{display:block; width:100%; border:1.5px dashed var(--line-strong); border-radius:10px; padding:30px 20px; text-align:center; background:var(--surface-2); cursor:pointer}
+  .drop.filled{border-color:var(--primary); background:var(--primary-wash)}
+  .drop .fn{font-weight:600; color:var(--ink)}
+  .drop.drag{border-color:var(--primary); background:var(--primary-wash)}
+
+  /* Result panels */
+  .result{border-radius:8px; padding:14px 16px; font-size:13px; margin-top:4px}
+  .result.ok{background:var(--success-wash); color:#176b4a; border:1px solid #BFE6D3}
+  .result.err{background:var(--danger-wash); color:#9f2f2f; border:1px solid #F1C9C9}
+  .result h4{margin:0 0 4px; font-size:14px}
+  .err-table{width:100%; min-width:0; margin-top:12px; font-size:12px; border:1px solid #F1C9C9; border-radius:6px; overflow:hidden; background:#fff}
+  .err-table th,.err-table td{border-bottom:1px solid #F3D7D7; padding:8px 10px; white-space:normal; text-align:left}
+  .err-table th{background:#FBECEC; color:#9f2f2f; font-weight:600}
+
+  /* Sim toggle */
+  .sim{display:flex; align-items:center; gap:14px; margin-top:16px; padding:10px 12px; border:1px dashed var(--line-strong); border-radius:8px; background:var(--surface-2); font-size:12px}
+  .sim .k{color:var(--warn); font-weight:700}
+  .sim label{display:inline-flex; align-items:center; gap:5px; color:var(--muted); cursor:pointer}
+
+  /* Filter form (extract) */
+  .filters{display:flex; flex-direction:column; gap:16px}
+  .frow{display:flex; flex-direction:column; gap:6px}
+  .frow .flabel{display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600}
+  .req{font-size:11px; font-weight:700; padding:1px 7px; border-radius:4px; background:var(--danger-wash); color:var(--danger)}
+  .opt{font-size:11px; font-weight:700; padding:1px 7px; border-radius:4px; background:#EEF1F5; color:var(--muted)}
+  .frow .desc{font-size:12px; color:var(--muted)}
+  .frow .inp, .frow select, .frow input{height:36px; border:1px solid var(--line-strong); border-radius:6px; padding:0 10px; font-family:inherit; font-size:13px; background:var(--surface); color:var(--ink)}
+  .daterange{display:flex; align-items:center; gap:8px}
+  .daterange span{color:var(--faint)}
+  .nofilter{padding:18px; border:1px dashed var(--line-strong); border-radius:8px; color:var(--muted); font-size:13px; background:var(--surface-2); text-align:center}
+
+  /* Toast */
+  .toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(14px); opacity:0; transition:.18s; background:var(--ink); color:#fff; padding:11px 18px; border-radius:8px; font-size:13px; z-index:80; box-shadow:var(--shadow); pointer-events:none}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+
+  @media (max-width:640px){
+    .search input[type=text]{min-width:0}
+    .steps .st .lb{display:none}
+  }
+</style>
+</head>
+<body>
+
+<div class="appbar">
+  <div class="brand"><span class="dot"></span>LABS 3.0 <small>Admin</small></div>
+  <div class="crumb">부가서비스 › 데이터 처리 › <b id="crumbLeaf">데이터 업데이트</b></div>
+  <div class="spacer"></div>
+  <div class="demo">
+    <span class="tag">프로토타입</span>
+    데모 계정 권한
+    <select id="demoAccess" title="'특정 사용자' 템플릿에 대한 현재 계정의 접근 권한을 시뮬레이션합니다">
+      <option value="no">특정 사용자 템플릿 접근 불가</option>
+      <option value="yes">특정 사용자 템플릿 접근 가능</option>
+    </select>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="tabs">
+    <button id="tabUpdate" class="on" onclick="switchTab('update')">데이터 업데이트</button>
+    <button id="tabExtract" onclick="switchTab('extract')">데이터 추출</button>
+  </div>
+
+  <!-- 검색 -->
+  <div class="panel">
+    <div class="panel-hd"><h2>검색</h2></div>
+    <div class="search">
+      <div class="field">
+        <label>분류</label>
+        <select id="fCat" class="control">
+          <option value="">전체</option>
+          <option>Member</option><option>HOTC</option><option>LMS</option><option>Product</option><option>Community</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>검색어 구분</label>
+        <select id="fKind" class="control">
+          <option value="code">템플릿코드</option>
+          <option value="name">템플릿명</option>
+        </select>
+      </div>
+      <div class="field grow">
+        <label>검색어</label>
+        <input id="fKw" type="text" placeholder="검색어를 입력해주세요." onkeydown="if(event.key==='Enter')doSearch()">
+      </div>
+      <div class="btns">
+        <button class="btn primary" onclick="doSearch()">검색</button>
+        <button class="btn" onclick="resetSearch()">초기화</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 목록 -->
+  <div class="panel">
+    <div class="panel-hd">
+      <h2 id="listTitle">데이터 업데이트 템플릿</h2>
+      <span class="count" id="listCount">총 0건</span>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead id="thead"></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="pager" id="pager" style="display:none">
+      <label class="pagesize">노출 건수
+        <select id="pageSize" onchange="changePageSize()">
+          <option value="30">30건</option>
+          <option value="50" selected>50건</option>
+          <option value="100">100건</option>
+          <option value="200">200건</option>
+        </select>
+      </label>
+      <div class="pages" id="pages"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 업로드 모달 (데이터 업데이트) ============ -->
+<div class="overlay" id="upOverlay">
+  <div class="modal wide">
+    <div class="modal-hd">
+      <div>
+        <div class="ttl">데이터 업로드</div>
+        <div class="sub" id="upSub">템플릿</div>
+      </div>
+      <button class="x" onclick="closeUpload()">×</button>
+    </div>
+    <div class="modal-bd">
+      <div class="steps" id="upSteps">
+        <div class="st" data-s="1"><span class="n">1</span><span class="lb">양식 다운로드</span><span class="bar"></span></div>
+        <div class="st" data-s="2"><span class="n">2</span><span class="lb">파일 업로드</span><span class="bar"></span></div>
+        <div class="st" data-s="3"><span class="n">3</span><span class="lb">유효성 검토</span><span class="bar"></span></div>
+        <div class="st" data-s="4"><span class="n">4</span><span class="lb">업로드 실행</span><span class="bar"></span></div>
+        <div class="st" data-s="5"><span class="n">5</span><span class="lb">실행 결과</span></div>
+      </div>
+
+      <!-- step 1 -->
+      <div class="stepbox" data-step="1">
+        <p class="lead">① 템플릿 양식을 다운로드하고, 양식에 맞춰 데이터를 입력하세요.</p>
+        <button class="btn" onclick="toast('양식을 다운로드했습니다 (프로토타입)')">양식 다운로드 (.xlsx)</button>
+        <p class="muted" style="margin-top:12px">※ 입력 컬럼·필수 항목·유효성 규칙·매칭 키는 템플릿별로 정의됩니다.</p>
+      </div>
+
+      <!-- step 2 -->
+      <div class="stepbox" data-step="2" hidden>
+        <p class="lead">② 작성한 파일을 업로드하세요. (xlsx 또는 csv)</p>
+        <label class="drop" id="dropZone">
+          <input type="file" id="fileInput" accept=".xlsx,.csv" hidden onchange="onFile(this)">
+          <div id="dropText"><b>파일 선택</b> 또는 이곳에 드래그<br><span class="muted">엑셀(.xlsx) / CSV(.csv)</span></div>
+        </label>
+      </div>
+
+      <!-- step 3 -->
+      <div class="stepbox" data-step="3" hidden>
+        <p class="lead">③ 업로드한 파일을 반영 전 전건 검증합니다.</p>
+        <button class="btn primary" id="btnValidate" onclick="runValidate()">유효성 검토 실행</button>
+        <div id="valResult"></div>
+        <div class="sim">
+          <span class="k">시뮬레이션</span>
+          <label><input type="radio" name="simVal" value="ok" checked> 검토 성공</label>
+          <label><input type="radio" name="simVal" value="err"> 검토 실패</label>
+        </div>
+      </div>
+
+      <!-- step 4 -->
+      <div class="stepbox" data-step="4" hidden>
+        <p class="lead">④ 검증을 통과했습니다. 업로드를 실행하면 <b>전건 단일 트랜잭션</b>으로 반영됩니다.</p>
+        <div class="result ok"><b>유효성 검토 통과</b> · 총 <b>24건</b> · 처리 유형 반영</div>
+        <div class="sim">
+          <span class="k">시뮬레이션</span>
+          <label><input type="radio" name="simRun" value="ok" checked> 반영 성공</label>
+          <label><input type="radio" name="simRun" value="fail"> 반영 실패 (전건 롤백)</label>
+        </div>
+      </div>
+
+      <!-- step 5 -->
+      <div class="stepbox" data-step="5" hidden>
+        <div id="runResult"></div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn ghost left" id="upBack" onclick="upPrev()" hidden>이전</button>
+      <button class="btn" onclick="closeUpload()">닫기</button>
+      <button class="btn primary" id="upNext" onclick="upNext()">다음</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 다운로드 모달 (데이터 추출) ============ -->
+<div class="overlay" id="dnOverlay">
+  <div class="modal">
+    <div class="modal-hd">
+      <div>
+        <div class="ttl">데이터 추출</div>
+        <div class="sub" id="dnSub">템플릿</div>
+      </div>
+      <button class="x" onclick="closeDownload()">×</button>
+    </div>
+    <div class="modal-bd">
+      <div id="dnBody"></div>
+    </div>
+    <div class="modal-ft" id="dnFoot">
+      <button class="btn" onclick="closeDownload()">닫기</button>
+      <button class="btn primary" id="dnRun" onclick="runExtract()" disabled>다운로드 실행</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------------- Mock 데이터 (큐레이션 + 페이지네이션 확인용 더미) ---------------- */
+const UPDATE_BASE = [
+  {code:'1001', cat:'Product',  name:'수동 수료처리',          pii:'Y', access:'특정 사용자', type:'수정(UPDATE)',    req:'최인화', open:'2026.10.13', mod:'최인화', modd:'2026.12.31'},
+  {code:'1002', cat:'Member',   name:'회원 등급 일괄 조정',     pii:'Y', access:'특정 사용자', type:'수정(UPDATE)',    req:'김서연', open:'2026.09.01', mod:'-',      modd:'-'},
+  {code:'1003', cat:'LMS',      name:'수강 상태 일괄 등록',     pii:'N', access:'모든 사용자', type:'신규+수정(upsert)', req:'박준호', open:'2026.08.20', mod:'최인화', modd:'2026.10.05'},
+  {code:'1004', cat:'HOTC',     name:'상담 이관 일괄 처리',     pii:'N', access:'모든 사용자', type:'신규(INSERT)',    req:'이민정', open:'2026.07.11', mod:'-',      modd:'-'},
+  {code:'1005', cat:'Community',name:'게시판 카테고리 일괄 등록',pii:'N', access:'모든 사용자', type:'신규(INSERT)',    req:'박준호', open:'2026.06.30', mod:'-',      modd:'-'},
+  {code:'1006', cat:'Product',  name:'구독상품 수강기간 연장',  pii:'Y', access:'특정 사용자', type:'수정(UPDATE)',    req:'최인화', open:'2026.10.01', mod:'-',      modd:'-'},
+];
+
+const EXTRACT_BASE = [
+  {code:'2001', cat:'Product',  name:'구독상품 월별명단',   pii:'Y', access:'특정 사용자', req:'최인화', open:'2026.10.13', mod:'최인화', modd:'2026.12.31',
+    filters:[
+      {key:'학습 시작일', type:'date', required:true, desc:'입력 규칙: YYYY-MM-DD · 값 예시: 2026-12-01'},
+      {key:'학습 종료일', type:'date', required:true, desc:'입력 규칙: YYYY-MM-DD · 값 예시: 2026-12-31'},
+    ]},
+  {code:'2002', cat:'Member',   name:'휴면 예정 회원 목록', pii:'Y', access:'특정 사용자', req:'김서연', open:'2026.09.15', mod:'-', modd:'-',
+    filters:[{key:'기준일', type:'date', required:true, desc:'휴면 전환 기준일을 선택하세요.'}]},
+  {code:'2003', cat:'LMS',      name:'과정별 수강현황',     pii:'N', access:'모든 사용자', req:'박준호', open:'2026.08.10', mod:'-', modd:'-',
+    filters:[
+      {key:'과정 ID', type:'text', required:true,  desc:'추출할 과정 ID를 입력하세요. (쉼표로 다중 입력)'},
+      {key:'조회기간', type:'daterange', required:false, desc:'미입력 시 전체 기간이 추출됩니다.'},
+      {key:'수강상태', type:'select', required:false, opts:['전체','수강중','수료','미수료'], desc:'특정 상태만 추출하려면 선택하세요.'},
+    ]},
+  {code:'2004', cat:'HOTC',     name:'1:1 문의 처리 내역', pii:'N', access:'모든 사용자', req:'이민정', open:'2026.07.20', mod:'박준호', modd:'2026.09.30', filters:[]},
+  {code:'2005', cat:'Community',name:'게시물 신고 내역',   pii:'N', access:'모든 사용자', req:'박준호', open:'2026.06.05', mod:'-', modd:'-', filters:[]},
+  {code:'2006', cat:'Product',  name:'구독상품 해지 현황',  pii:'N', access:'모든 사용자', req:'최인화', open:'2026.10.08', mod:'-', modd:'-', filters:[]},
+];
+
+/* 페이지네이션 확인용 더미 생성 (전체 건수 > 기본 노출 50건이 되도록) */
+const CATS=['Member','HOTC','LMS','Product','Community'];
+const TYPES=['신규(INSERT)','수정(UPDATE)','신규+수정(upsert)'];
+const REQS=['최인화','김서연','박준호','이민정'];
+const UPD_POOL=['수강 상태 일괄 변경','회원 정보 일괄 수정','포인트 일괄 지급','과정 매핑 일괄 등록','거래처 정보 일괄 갱신','설문 응답 일괄 등록','수료 기준 일괄 보정'];
+const EXT_POOL=['월별 수강 현황','회원 가입 현황','과정별 이수 현황','문의 처리 현황','게시물 통계','결제 내역','구독 갱신 현황'];
+
+function genDate(i){ const m=(i%12)+1, d=(i%27)+1; return `2026.${String(m).padStart(2,'0')}.${String(d).padStart(2,'0')}`; }
+
+const UPDATE_ROWS = UPDATE_BASE.concat(Array.from({length:52},(_,i)=>({
+  code:String(1007+i), cat:CATS[i%5], name:`${UPD_POOL[i%UPD_POOL.length]} ${i+1}`,
+  pii:(i%3===0?'Y':'N'), access:(i%2===0?'모든 사용자':'특정 사용자'),
+  type:TYPES[i%3], req:REQS[i%4], open:genDate(i), mod:'-', modd:'-'
+})));
+
+const EXTRACT_ROWS = EXTRACT_BASE.concat(Array.from({length:52},(_,i)=>({
+  code:String(2007+i), cat:CATS[i%5], name:`${EXT_POOL[i%EXT_POOL.length]} ${i+1}`,
+  pii:(i%3===0?'Y':'N'), access:(i%2===0?'모든 사용자':'특정 사용자'),
+  req:REQS[i%4], open:genDate(i), mod:'-', modd:'-', filters:[]
+})));
+
+/* ---------------- 상태 ---------------- */
+let curTab='update', pageSize=50, curPage=1;
+function demoHasAccess(){ return document.getElementById('demoAccess').value==='yes'; }
+function rowAccessible(r){ return r.access==='모든 사용자' || demoHasAccess(); }
+
+/* ---------------- 렌더 (목록: 일반 텍스트) ---------------- */
+function filteredRows(){
+  const src = curTab==='update' ? UPDATE_ROWS : EXTRACT_ROWS;
+  const cat = document.getElementById('fCat').value;
+  const kind = document.getElementById('fKind').value;
+  const kw = document.getElementById('fKw').value.trim().toLowerCase();
+  return src.filter(r=>{
+    if(cat && r.cat!==cat) return false;
+    if(kw){ const hay=(kind==='code'? r.code : r.name).toLowerCase(); if(!hay.includes(kw)) return false; }
+    return true;
+  });
+}
+
+function render(){
+  const isUpd = curTab==='update';
+  const all = filteredRows();
+  const total = all.length;
+  const cols = isUpd
+    ? ['템플릿코드','분류','템플릿명','개인정보 포함 여부','접근 권한','처리 유형','최초 요청','오픈일','최근 수정','수정일','업로드']
+    : ['템플릿코드','분류','템플릿명','개인정보 포함 여부','접근 권한','최초 요청','오픈일','최근 수정','수정일','다운로드'];
+
+  document.getElementById('thead').innerHTML = '<tr>'+cols.map(c=>`<th>${c}</th>`).join('')+'</tr>';
+  document.getElementById('listTitle').textContent = isUpd ? '데이터 업데이트 템플릿' : '데이터 추출 템플릿';
+  document.getElementById('listCount').textContent = `총 ${total}건`;
+
+  const tbody = document.getElementById('tbody');
+  if(total===0){
+    tbody.innerHTML = `<tr><td class="empty" colspan="${cols.length}">현재 조회된 데이터가 없습니다.</td></tr>`;
+    setPager(0,0);
+    return;
+  }
+
+  const pages = Math.ceil(total/pageSize);
+  if(curPage>pages) curPage=pages;
+  const start=(curPage-1)*pageSize;
+  const rows = all.slice(start, start+pageSize);
+
+  tbody.innerHTML = rows.map(r=>{
+    const action = `<button class="btn sm act-btn" data-code="${r.code}">${isUpd ? '업로드' : '다운로드'}</button>`;
+    const base = `
+      <td>${r.code}</td>
+      <td>${r.cat}</td>
+      <td class="name">${r.name}</td>
+      <td>${r.pii}</td>
+      <td>${r.access}</td>`;
+    const typeCell = isUpd ? `<td>${r.type}</td>` : '';
+    const tail = `
+      <td>${r.req}</td>
+      <td>${r.open}</td>
+      <td>${r.mod}</td>
+      <td>${r.modd}</td>
+      <td>${action}</td>`;
+    return `<tr>${base}${typeCell}${tail}</tr>`;
+  }).join('');
+
+  setPager(total, pages);
+}
+
+/* ---------------- 페이지네이션 (공통 정책) ---------------- */
+function setPager(total, pages){
+  const pager = document.getElementById('pager');
+  const pagesEl = document.getElementById('pages');
+  // 빈 상태: 페이지네이션 영역 전체 미노출
+  if(total===0){ pager.style.display='none'; return; }
+  pager.style.display='flex';
+  // 전체 건수가 노출 건수 이하이면 페이지 이동 UI만 미노출 (노출 건수 선택은 유지)
+  if(total<=pageSize){ pagesEl.innerHTML=''; pagesEl.style.display='none'; return; }
+  pagesEl.style.display='flex';
+  let html = `<button ${curPage===1?'disabled':''} onclick="goPage(${curPage-1})">‹</button>`;
+  for(let p=1;p<=pages;p++){ html += `<button class="${p===curPage?'on':''}" onclick="goPage(${p})">${p}</button>`; }
+  html += `<button ${curPage===pages?'disabled':''} onclick="goPage(${curPage+1})">›</button>`;
+  pagesEl.innerHTML = html;
+}
+function goPage(p){
+  const total = filteredRows().length;
+  const pages = Math.ceil(total/pageSize);
+  if(p<1 || p>pages) return;
+  curPage = p;
+  render();
+  document.getElementById('listTitle').scrollIntoView({behavior:'smooth', block:'start'}); // 상단으로 스크롤
+}
+function changePageSize(){ pageSize = +document.getElementById('pageSize').value; curPage=1; render(); } // 1페이지 초기화
+
+function doSearch(){ curPage=1; render(); }           // 검색 시 1페이지 초기화
+function resetSearch(){
+  document.getElementById('fCat').value='';
+  document.getElementById('fKind').value='code';
+  document.getElementById('fKw').value='';
+  curPage=1; render();
+}
+function switchTab(t){
+  curTab=t;
+  document.getElementById('tabUpdate').classList.toggle('on', t==='update');
+  document.getElementById('tabExtract').classList.toggle('on', t==='extract');
+  document.getElementById('crumbLeaf').textContent = t==='update' ? '데이터 업데이트' : '데이터 추출';
+  resetSearch();
+}
+
+/* ---------------- 접근 권한 체크 ---------------- */
+function clickAction(r, kind){
+  if(!rowAccessible(r)){ alert('접근 권한이 없습니다. 관리자에게 문의하세요.'); return; }
+  if(kind==='upload') openUpload(r); else openDownload(r);
+}
+function rowByCode(code){
+  const src = curTab==='update' ? UPDATE_ROWS : EXTRACT_ROWS;
+  return src.find(r=>r.code===code);
+}
+/* 목록 액션 버튼: 이벤트 위임으로 처리 (행 데이터를 코드로 조회) */
+document.getElementById('tbody').addEventListener('click', e=>{
+  const b = e.target.closest('.act-btn');
+  if(!b) return;
+  const r = rowByCode(b.dataset.code);
+  if(r) clickAction(r, curTab==='update' ? 'upload' : 'download');
+});
+document.getElementById('demoAccess').addEventListener('change', render);
+
+/* ---------------- 업로드 모달 ---------------- */
+let upStep=1, upValidated=false, upRow=null;
+function openUpload(r){
+  upRow=r; upStep=1; upValidated=false;
+  document.getElementById('upSub').textContent = `${r.code} · ${r.name} · 처리 유형: ${r.type}`;
+  const dz=document.getElementById('dropZone'); dz.classList.remove('filled');
+  document.getElementById('dropText').innerHTML = '<b>파일 선택</b> 또는 이곳에 드래그<br><span class="muted">엑셀(.xlsx) / CSV(.csv)</span>';
+  document.getElementById('fileInput').value='';
+  document.getElementById('valResult').innerHTML='';
+  showUpStep(1);
+  document.getElementById('upOverlay').classList.add('open');
+}
+function closeUpload(){ document.getElementById('upOverlay').classList.remove('open'); }
+function showUpStep(n){
+  upStep=n;
+  document.querySelectorAll('[data-step]').forEach(el=> el.hidden = (+el.dataset.step !== n));
+  document.querySelectorAll('#upSteps .st').forEach(st=>{
+    const s=+st.dataset.s;
+    st.classList.toggle('active', s===n);
+    st.classList.toggle('done', s<n);
+  });
+  const back=document.getElementById('upBack'), next=document.getElementById('upNext');
+  back.hidden = (n===1 || n===5);
+  next.textContent = n===5 ? '완료' : n===4 ? '업로드 실행' : '다음';
+  updateUpNext();
+}
+function updateUpNext(){
+  const next=document.getElementById('upNext');
+  if(upStep===2) next.disabled = !document.getElementById('fileInput').value;
+  else if(upStep===3) next.disabled = !upValidated;   // 검토 성공 전까지 실행 단계 진입 불가
+  else next.disabled = false;
+}
+function onFile(input){
+  const has = input.files.length>0;
+  document.getElementById('dropZone').classList.toggle('filled', has);
+  if(has) document.getElementById('dropText').innerHTML = `<span class="fn">${input.files[0].name}</span><br><span class="muted">다시 선택하려면 클릭</span>`;
+  updateUpNext();
+}
+/* 드래그&드롭 */
+(function(){
+  const dz=document.getElementById('dropZone'), fi=document.getElementById('fileInput');
+  ['dragenter','dragover'].forEach(ev=> dz.addEventListener(ev, e=>{e.preventDefault(); dz.classList.add('drag');}));
+  ['dragleave','drop'].forEach(ev=> dz.addEventListener(ev, e=>{e.preventDefault(); dz.classList.remove('drag');}));
+  dz.addEventListener('drop', e=>{ if(e.dataTransfer.files.length){ fi.files=e.dataTransfer.files; onFile(fi); }});
+})();
+function runValidate(){
+  const sim=document.querySelector('input[name="simVal"]:checked').value;
+  const box=document.getElementById('valResult');
+  if(sim==='err'){
+    upValidated=false;
+    box.innerHTML = `
+      <div class="result err">
+        <h4>유효성 검토 실패 · 4건 오류</h4>
+        오류를 수정한 뒤 파일을 다시 업로드하세요. 오류가 1건이라도 있으면 업로드를 실행할 수 없습니다.
+        <table class="err-table">
+          <thead><tr><th>행</th><th>컬럼</th><th>오류 사유</th></tr></thead>
+          <tbody>
+            <tr><td>3</td><td>회원ID</td><td>참조 대상 없음 (존재하지 않는 회원)</td></tr>
+            <tr><td>7</td><td>과정ID</td><td>참조 대상 없음</td></tr>
+            <tr><td>12</td><td>수료일</td><td>날짜 형식 오류 (YYYY-MM-DD)</td></tr>
+            <tr><td>15</td><td>-</td><td>파일 내 중복 행</td></tr>
+          </tbody>
+        </table>
+        <div style="margin-top:12px"><button class="btn sm" onclick="showUpStep(2)">파일 다시 업로드</button></div>
+      </div>`;
+  } else {
+    upValidated=true;
+    box.innerHTML = `
+      <div class="result ok">
+        <h4>유효성 검토 통과 · 총 24건</h4>
+        전건 검증을 통과했습니다. [다음]을 눌러 업로드를 실행하세요.
+      </div>`;
+  }
+  updateUpNext();
+}
+function upNext(){
+  if(upStep===4){ runUpload(); return; }
+  if(upStep===5){ closeUpload(); return; }
+  showUpStep(upStep+1);
+}
+function upPrev(){ if(upStep>1) showUpStep(upStep-1); }
+function runUpload(){
+  const sim=document.querySelector('input[name="simRun"]:checked').value;
+  const box=document.getElementById('runResult');
+  if(sim==='fail'){
+    box.innerHTML = `
+      <div class="result err">
+        <h4>반영 실패 · 전건 롤백</h4>
+        반영 중 시스템 오류가 발생하여 전건 롤백되었습니다. 데이터는 반영 전 상태로 복귀했으며, 부분 반영된 내역은 없습니다. 잠시 후 다시 시도하세요.
+      </div>`;
+  } else {
+    box.innerHTML = `
+      <div class="result ok">
+        <h4>업로드 완료 · 총 24건 반영</h4>
+      </div>`;
+  }
+  showUpStep(5);
+}
+
+/* ---------------- 다운로드 모달 (추출) ---------------- */
+let dnRow=null;
+function openDownload(r){
+  dnRow=r;
+  document.getElementById('dnSub').textContent = `${r.code} · ${r.name}`;
+  const body=document.getElementById('dnBody');
+  document.getElementById('dnFoot').style.display='flex';
+  if(!r.filters || r.filters.length===0){
+    body.innerHTML = `<div class="nofilter">이 템플릿은 추가 필터가 없습니다. 바로 추출을 실행하세요.</div>`;
+  } else {
+    body.innerHTML = `<div class="filters">` + r.filters.map((f,i)=>{
+      const badge = f.required ? '<span class="req">필수</span>' : '<span class="opt">선택</span>';
+      let input='';
+      if(f.type==='text')   input=`<input class="inp" data-req="${f.required}" type="text" placeholder="입력하세요" oninput="dnCheck()">`;
+      else if(f.type==='date')  input=`<input class="inp" data-req="${f.required}" type="date" oninput="dnCheck()">`;
+      else if(f.type==='month') input=`<input class="inp" data-req="${f.required}" type="month" oninput="dnCheck()">`;
+      else if(f.type==='daterange') input=`<div class="daterange"><input class="inp" data-req="${f.required}" type="date" oninput="dnCheck()"><span>~</span><input type="date" class="inp" oninput="dnCheck()"></div>`;
+      else if(f.type==='select') input=`<select data-req="${f.required}" onchange="dnCheck()">`+f.opts.map((o,oi)=>`<option value="${oi===0?'':o}">${o}</option>`).join('')+`</select>`;
+      return `<div class="frow"><div class="flabel">${f.key} ${badge}</div><div class="desc">${f.desc}</div>${input}</div>`;
+    }).join('') + `</div>`;
+  }
+  document.getElementById('dnRun').style.display='';
+  document.getElementById('dnOverlay').classList.add('open');
+  dnCheck();
+}
+function closeDownload(){ document.getElementById('dnOverlay').classList.remove('open'); }
+function dnCheck(){
+  const reqInputs=document.querySelectorAll('#dnBody [data-req="true"]');
+  let ok=true;
+  reqInputs.forEach(el=>{ if(!el.value || !el.value.trim()) ok=false; });
+  document.getElementById('dnRun').disabled = !ok;
+}
+function runExtract(){
+  const piiNote = dnRow.pii==='Y'
+    ? `<div class="result" style="background:var(--warn-wash);color:var(--warn);border:1px solid #EAD9A8;margin-top:10px">개인정보 포함 파일입니다. ‘파일 다운로드’ 메뉴에서 다운로드 시 <b>사유 입력</b>이 필요합니다.</div>`
+    : '';
+  document.getElementById('dnBody').innerHTML = `
+    <div class="result ok">
+      <h4>추출 요청이 접수되었습니다</h4>
+      실행 결과 확인과 파일 다운로드는 <b>‘파일 다운로드’</b> 메뉴에서 진행하세요.
+    </div>${piiNote}`;
+  document.getElementById('dnFoot').innerHTML = `<button class="btn" onclick="closeDownload()">닫기</button>
+    <button class="btn primary" onclick="toast('파일 다운로드 메뉴로 이동 (프로토타입)'); closeDownload();">파일 다운로드 메뉴로 이동</button>`;
+}
+
+/* ---------------- Toast ---------------- */
+let toastT;
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),1900);
+}
+
+/* ESC / overlay 닫기 */
+document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeUpload(); closeDownload(); }});
+[['upOverlay',closeUpload],['dnOverlay',closeDownload]].forEach(([id,fn])=>{
+  document.getElementById(id).addEventListener('mousedown', e=>{ if(e.target.id===id) fn(); });
+});
+
+render();
+</script>
+</body>
+</html>
