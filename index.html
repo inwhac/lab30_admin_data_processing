@@ -305,12 +305,12 @@
 
       <!-- step 4 -->
       <div class="stepbox" data-step="4" hidden>
-        <p class="lead">④ 검증을 통과했습니다. 업로드를 실행하면 <b>전건 단일 트랜잭션</b>으로 반영됩니다.</p>
-        <div class="result ok"><b>유효성 검토 통과</b> · 총 <b>24건</b> · 처리 유형 반영</div>
+        <p class="lead">④ 검증을 통과했습니다. 업로드를 실행하면 통과한 건이 반영됩니다.</p>
+        <div class="result ok"><b>유효성 검토 통과</b> · 총 <b>24건</b></div>
         <div class="sim">
           <span class="k">시뮬레이션</span>
-          <label><input type="radio" name="simRun" value="ok" checked> 반영 성공</label>
-          <label><input type="radio" name="simRun" value="fail"> 반영 실패 (전건 롤백)</label>
+          <label><input type="radio" name="simRun" value="ok" checked> 전건 반영 성공</label>
+          <label><input type="radio" name="simRun" value="fail"> 반영 중 일부 실패</label>
         </div>
       </div>
 
@@ -608,8 +608,9 @@ function runUpload(){
   if(sim==='fail'){
     box.innerHTML = `
       <div class="result err">
-        <h4>반영 실패 · 전건 롤백</h4>
-        반영 중 시스템 오류가 발생하여 전건 롤백되었습니다. 데이터는 반영 전 상태로 복귀했으며, 부분 반영된 내역은 없습니다. 잠시 후 다시 시도하세요.
+        <h4>일부 실패 · 20건 반영 / 4건 실패</h4>
+        성공 건은 반영되었습니다. 처리 결과(성공/실패)가 표기된 파일을 ‘파일 다운로드’ 메뉴에서 내려받아 실패 행을 수정 후 재업로드하세요.
+        <div style="margin-top:12px"><button class="btn sm" onclick="toast('파일 다운로드 메뉴로 이동 (프로토타입)'); closeUpload();">파일 다운로드 메뉴로 이동</button></div>
       </div>`;
   } else {
     box.innerHTML = `
