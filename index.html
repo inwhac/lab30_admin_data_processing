@@ -347,6 +347,22 @@
   </div>
 </div>
 
+<!-- ============ 확인(경고) 모달 ============ -->
+<div class="overlay" id="confirmOverlay" style="z-index:60">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-hd">
+      <div class="ttl" id="confirmTtl">업데이트 실행 확인</div>
+    </div>
+    <div class="modal-bd">
+      <p id="confirmMsg" style="font-size:14px; line-height:1.65; margin:0"></p>
+    </div>
+    <div class="modal-ft">
+      <button class="btn" id="confirmNo">아니요</button>
+      <button class="btn primary" id="confirmYes">예</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -597,7 +613,10 @@ function runValidate(){
   updateUpNext();
 }
 function upNext(){
-  if(upStep===4){ runUpload(); return; }
+  if(upStep===4){
+    showConfirm('업데이트 작업이 시작되면 중도 취소하거나 되돌릴 수 없습니다.<br>실행하시겠습니까?', runUpload);
+    return;
+  }
   if(upStep===5){ closeUpload(); return; }
   showUpStep(upStep+1);
 }
@@ -674,9 +693,23 @@ function toast(msg){
   clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),1900);
 }
 
+/* ---------------- 확인(경고) 모달 ---------------- */
+let confirmCb=null;
+function showConfirm(msg, onYes){
+  document.getElementById('confirmMsg').innerHTML = msg;
+  confirmCb = onYes;
+  document.getElementById('confirmOverlay').classList.add('open');
+}
+function closeConfirm(){ document.getElementById('confirmOverlay').classList.remove('open'); confirmCb=null; }
+document.getElementById('confirmNo').onclick = closeConfirm;
+document.getElementById('confirmYes').onclick = ()=>{ const cb=confirmCb; closeConfirm(); if(cb) cb(); };
+
 /* ESC / overlay 닫기 */
-document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeUpload(); closeDownload(); }});
-[['upOverlay',closeUpload],['dnOverlay',closeDownload]].forEach(([id,fn])=>{
+document.addEventListener('keydown', e=>{ if(e.key==='Escape'){
+  if(document.getElementById('confirmOverlay').classList.contains('open')){ closeConfirm(); return; } // 확인 모달이 위에 있으면 그것만 닫음
+  closeUpload(); closeDownload();
+}});
+[['upOverlay',closeUpload],['dnOverlay',closeDownload],['confirmOverlay',closeConfirm]].forEach(([id,fn])=>{
   document.getElementById(id).addEventListener('mousedown', e=>{ if(e.target.id===id) fn(); });
 });
 
